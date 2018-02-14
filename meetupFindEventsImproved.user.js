@@ -28,13 +28,43 @@
         requestEventInfo(eventListings[i], urlName, id);
     }
 
-    //TODO: Display time duration/end time
-    //TODO: display rsvp_limit.
-    //TODO: display address (clickable to google maps using address/latlong?)
+	function displayRSVPLimit(eventListing, rsvpLimit) {
+        if(rsvpLimit !== undefined) {
+            var attendeeCount = eventListing.getElementsByClassName("attendee-count")[0];
+            if(attendeeCount !== undefined) {
+                var span = document.createElement("span");
+                span.setAttribute("class", "text--countdown text--middotLeft");
+                span.innerText += "/ " + rsvpLimit + " spaces available";
+                attendeeCount.append(span);
+            }
+        }
+    }
+
+    // duration is in milliseconds.
+    function displayDuration(eventListing, duration) {
+        if(duration !== undefined) {
+			var startTimeLink = eventListing.getElementsByClassName("resetLink chunk")[0];
+			startTimeLink.append(document.createElement("br"));
+			var time = document.createElement("time");
+		    time.innerText = (duration/(1000*60*60)) + "HRS";
+			startTimeLink.append(time);
+        }
+    }
+
+    function displayVenue(eventListing, venue) {
+        if(venue !== undefined) {
+			var locationDiv = eventListing.getElementsByClassName("chunk text--secondary")[0];
+			if(locationDiv !== undefined) {
+				locationDiv.children[0].href = "https://www.google.com/maps/?q=" + venue.lat + "," + venue.lon;
+			}
+        }
+    }
+
+    //TODO: Need to skip displaying on events happening now?
     function updateEventListing(eventListing, json) {
-        console.log(json.rsvp_limit);
-        console.log(json.venue);
-        console.log(json.duration / (1000*60*60));
+        displayRSVPLimit(eventListing, json.rsvp_limit);
+        displayVenue(eventListing, json.venue);
+        displayDuration(eventListing, json.duration);
     }
 
     function requestEventInfo(eventListing, urlName, id) {
