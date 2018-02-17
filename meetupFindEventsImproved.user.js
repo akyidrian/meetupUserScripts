@@ -10,23 +10,44 @@
 // ==/UserScript==
 
 // TODO: Cache results for a set time frame to avoid excess API calls?
-// TODO: Edge case: what do we do when more events are shown with further scrolling?
-// TODO: Sometimes rsvp_limit, venue and duration are undefined!
+// TODO: iframe to open google maps link?
 (function() {
     'use strict';
+	var eventIndex = 0;  // Keep track of next event to display on.
 
     // Click show more
     document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
 
-    // Go through event listings and perform API request for extra information
-    var eventListings = document.getElementsByClassName("event-listing");
-    var eventCount = eventListings.length;
-    for(var i = 0; i < eventCount; i++) {
-        var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
-        var urlName = slashSplitURL[3];
-        var id = slashSplitURL[5];
-        requestEventInfo(eventListings[i], urlName, id);
-    }
+	var observer = new MutationObserver(function(mutations) {
+		mutations.forEach(function(mutation) {
+			if(mutation.attributeName == 'id' &&
+               mutation.oldValue == '__sizzle__') {
+				processNewEventListings();
+			}
+		});
+	});
+
+	var observerConfig = {
+		attributes: true,
+		attributeOldValue: true
+	};
+
+	var targetNode = document.getElementsByClassName("searchResults")[0];
+	observer.observe(targetNode, observerConfig);
+
+	function processNewEventListings() {
+		// Go through event listings and perform API request for extra information
+		var eventListings = document.getElementsByClassName("event-listing");
+		var eventCount = eventListings.length;
+		console.log(eventCount);
+		for(var i = eventIndex; i < eventCount; i++) {
+			var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
+			var urlName = slashSplitURL[3];
+			var id = slashSplitURL[5];
+			requestEventInfo(eventListings[i], urlName, id);
+		}
+		eventIndex = i;
+	}
 
 	function displayRSVPLimit(eventListing, rsvpLimit) {
         if(rsvpLimit !== undefined) {
