@@ -9,8 +9,9 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-// TODO: Cache results for a set time frame to avoid excess API calls?
 // TODO: iframe to open google maps link?
+// TODO: Cache results for a set time frame to avoid excess API calls?
+// TODO: Side menu filter doesn't refresh event display.
 (function() {
     'use strict';
 	var eventIndex = 0;  // Keep track of next event to display on.
@@ -39,7 +40,6 @@
 		// Go through event listings and perform API request for extra information
 		var eventListings = document.getElementsByClassName("event-listing");
 		var eventCount = eventListings.length;
-		console.log(eventCount);
 		for(var i = eventIndex; i < eventCount; i++) {
 			var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
 			var urlName = slashSplitURL[3];
@@ -89,6 +89,9 @@
     }
 
     function requestEventInfo(eventListing, urlName, id) {
+        if(id === 'undefined') {
+            return;
+        }
         var xhr = new XMLHttpRequest(),
             method = "GET",
             url = "https://api.meetup.com/" + urlName + "/events/" + id;
