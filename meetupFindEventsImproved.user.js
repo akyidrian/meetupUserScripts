@@ -9,7 +9,6 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-// TODO: iframe to open google maps link?
 // TODO: Cache results for a set time frame to avoid excess API calls?
 // TODO: Side menu filter doesn't refresh event display.
 (function() {
@@ -74,9 +73,10 @@
 
     function displayVenue(eventListing, venue) {
         if(venue !== undefined) {
-			var locationDiv = eventListing.getElementsByClassName("chunk text--secondary")[0];
-			if(locationDiv !== undefined) {
-				locationDiv.children[0].href = "https://www.google.com/maps/?q=" + venue.lat + "," + venue.lon;
+			var locationLink = eventListing.getElementsByClassName("chunk text--secondary")[0].children[0];
+			if(locationLink !== undefined) {
+                locationLink.href = "https://www.google.com/maps/?q=" + venue.lat + "," + venue.lon;
+                locationLink.setAttribute("target", "_blank");  // Open new tab when clicked
 			}
         }
     }
