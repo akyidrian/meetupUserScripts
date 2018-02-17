@@ -73,8 +73,9 @@
 
     function displayVenue(eventListing, venue) {
         if(venue !== undefined) {
-            var locationLink = eventListing.getElementsByClassName("chunk text--secondary")[0].children[0];
-            if(locationLink !== undefined) {
+            var locationDiv = eventListing.getElementsByClassName("chunk text--secondary")[0];
+            if(locationDiv !== undefined) {
+                var locationLink = locationDiv.children[0];
                 locationLink.href = "https://www.google.com/maps/?q=" + venue.lat + "," + venue.lon;
                 locationLink.setAttribute("target", "_blank");  // Open new tab when clicked
             }
