@@ -13,42 +13,42 @@
 // TODO: Side menu filter doesn't refresh event display.
 (function() {
     'use strict';
-	var eventIndex = 0;  // Keep track of next event to display on.
+    var eventIndex = 0;  // Keep track of next event to display on.
 
     // Click show more
     document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
 
-	var observer = new MutationObserver(function(mutations) {
-		mutations.forEach(function(mutation) {
-			if(mutation.attributeName == 'id' &&
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if(mutation.attributeName == 'id' &&
                mutation.oldValue == '__sizzle__') {
-				processNewEventListings();
-			}
-		});
-	});
+                processNewEventListings();
+            }
+        });
+    });
 
-	var observerConfig = {
-		attributes: true,
-		attributeOldValue: true
-	};
+    var observerConfig = {
+        attributes: true,
+        attributeOldValue: true
+    };
 
-	var targetNode = document.getElementsByClassName("searchResults")[0];
-	observer.observe(targetNode, observerConfig);
+    var targetNode = document.getElementsByClassName("searchResults")[0];
+    observer.observe(targetNode, observerConfig);
 
-	function processNewEventListings() {
-		// Go through event listings and perform API request for extra information
-		var eventListings = document.getElementsByClassName("event-listing");
-		var eventCount = eventListings.length;
-		for(var i = eventIndex; i < eventCount; i++) {
-			var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
-			var urlName = slashSplitURL[3];
-			var id = slashSplitURL[5];
-			requestEventInfo(eventListings[i], urlName, id);
-		}
-		eventIndex = i;
-	}
+    function processNewEventListings() {
+        // Go through event listings and perform API request for extra information
+        var eventListings = document.getElementsByClassName("event-listing");
+        var eventCount = eventListings.length;
+        for(var i = eventIndex; i < eventCount; i++) {
+            var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
+            var urlName = slashSplitURL[3];
+            var id = slashSplitURL[5];
+            requestEventInfo(eventListings[i], urlName, id);
+        }
+        eventIndex = i;
+    }
 
-	function displayRSVPLimit(eventListing, rsvpLimit) {
+    function displayRSVPLimit(eventListing, rsvpLimit) {
         if(rsvpLimit !== undefined) {
             var attendeeCount = eventListing.getElementsByClassName("attendee-count")[0];
             if(attendeeCount !== undefined) {
@@ -63,21 +63,21 @@
     // duration is in milliseconds.
     function displayDuration(eventListing, duration) {
         if(duration !== undefined) {
-			var startTimeLink = eventListing.getElementsByClassName("resetLink chunk")[0];
-			startTimeLink.append(document.createElement("br"));
-			var time = document.createElement("time");
-		    time.innerText = (duration/(1000*60*60)) + "HRS";
-			startTimeLink.append(time);
+            var startTimeLink = eventListing.getElementsByClassName("resetLink chunk")[0];
+            startTimeLink.append(document.createElement("br"));
+            var time = document.createElement("time");
+            time.innerText = (duration/(1000*60*60)) + "HRS";
+            startTimeLink.append(time);
         }
     }
 
     function displayVenue(eventListing, venue) {
         if(venue !== undefined) {
-			var locationLink = eventListing.getElementsByClassName("chunk text--secondary")[0].children[0];
-			if(locationLink !== undefined) {
+            var locationLink = eventListing.getElementsByClassName("chunk text--secondary")[0].children[0];
+            if(locationLink !== undefined) {
                 locationLink.href = "https://www.google.com/maps/?q=" + venue.lat + "," + venue.lon;
                 locationLink.setAttribute("target", "_blank");  // Open new tab when clicked
-			}
+            }
         }
     }
 
