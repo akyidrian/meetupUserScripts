@@ -13,40 +13,63 @@
 // TODO: Side menu filter doesn't refresh event display.
 (function() {
     'use strict';
+    // TODO: Put inside closure?
     var eventIndex = 0;  // Keep track of next event to display on.
 
-    // Click show more
-    document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
-
-    var observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if(mutation.attributeName == 'id' &&
-               mutation.oldValue == '__sizzle__') {
-                processNewEventListings();
-            }
-        });
-    });
-
+    var observer = new MutationObserver(eventsMutationCallback);
     var observerConfig = {
-        attributes: true,
-        attributeOldValue: true
+        childList: true,
+        subtree: true,
     };
-
-    var targetNode = document.getElementsByClassName("searchResults")[0];
+    var targetNode = document.getElementById("simple-view");
     observer.observe(targetNode, observerConfig);
 
-    function processNewEventListings() {
+    // Click show more
+    //document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
+
+    // First page load
+    eventIndex = processNewEventListings(0);
+
+
+    function eventsMutationCallback(mutations) {
+        for(var m in mutations) {
+            var mutation = mutations[m];
+            var removedNodes = mutation.removedNodes;
+            if(removedNodes.length != 0) {
+                for(var r in removedNodes) {
+                    var removed = removedNodes[r];
+                    if(removed.classList !== undefined) {
+                        if(removed.classList.contains("interstitialblock")) {  // Filtering events
+                            eventIndex = 0;
+                            eventIndex = processNewEventListings(0);
+                            return;
+                        }
+                        else if(removed.classList.contains("simple-post-result-wrap")) {  // Scrolling down through to more events
+                            // Note, this is called when a filtering action if performed too,
+                            // but since there is no new events presented, eventIndex
+                            // remains unchanged. In otherwords, no processing is done.
+                            eventIndex = processNewEventListings(eventIndex);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    function processNewEventListings(startIndex) {
         // Go through event listings and perform API request for extra information
         var eventListings = document.getElementsByClassName("event-listing");
         var eventCount = eventListings.length;
-        for(var i = eventIndex; i < eventCount; i++) {
+        for(var i = startIndex; i < eventCount; i++) {
             var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
             var urlName = slashSplitURL[3];
             var id = slashSplitURL[5];
             requestEventInfo(eventListings[i], urlName, id);
         }
-        eventIndex = i;
+        return i;
     }
+
 
     function displayRSVPLimit(eventListing, rsvpLimit) {
         if(rsvpLimit !== undefined) {
@@ -60,6 +83,7 @@
         }
     }
 
+
     // duration is in milliseconds.
     function displayDuration(eventListing, duration) {
         if(duration !== undefined) {
@@ -70,6 +94,7 @@
             startTimeLink.append(time);
         }
     }
+
 
     function displayVenue(eventListing, venue) {
         if(venue !== undefined) {
@@ -82,15 +107,16 @@
         }
     }
 
-    //TODO: Need to skip displaying on events happening now?
+
     function updateEventListing(eventListing, json) {
         displayRSVPLimit(eventListing, json.rsvp_limit);
         displayVenue(eventListing, json.venue);
         displayDuration(eventListing, json.duration);
     }
 
+
     function requestEventInfo(eventListing, urlName, id) {
-        if(id === 'undefined') {
+        if(id === undefined) {
             return;
         }
         var xhr = new XMLHttpRequest(),
