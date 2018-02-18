@@ -9,14 +9,13 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-// TODO: Cache results for a set time frame to avoid excess API calls?
-// TODO: Side menu filter doesn't refresh event display.
+// TODO: Odd bug - occational duplication of displayed items
 (function() {
     'use strict';
     // TODO: Put inside closure?
     var eventIndex = 0;  // Keep track of next event to display on.
 
-    var observer = new MutationObserver(eventsMutationCallback);
+    var observer = new MutationObserver(eventListingsMutationCallback);
     var observerConfig = {
         childList: true,
         subtree: true,
@@ -31,7 +30,7 @@
     eventIndex = processNewEventListings(0);
 
 
-    function eventsMutationCallback(mutations) {
+    function eventListingsMutationCallback(mutations) {
         for(var m in mutations) {
             var mutation = mutations[m];
             var removedNodes = mutation.removedNodes;
