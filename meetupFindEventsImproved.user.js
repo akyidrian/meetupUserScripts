@@ -11,14 +11,18 @@
 
 (function() {
     'use strict';
-
+    const scriptName = "meetupFindEventsImproved";
     var observer = new MutationObserver(makeMutationCallback(processEventListings));
     var observerConfig = {
         childList: true,
         subtree: true,
     };
     var targetNode = document.getElementById("simple-view");
-    observer.observe(targetNode, observerConfig);
+    if(targetNode !== null) {  // If logged in...
+        observer.observe(targetNode, observerConfig);
+    } else {
+        console.log(scriptName + ": Need to log in");
+    }
 
     // Click show more
     //document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
@@ -38,14 +42,14 @@
                     if(typeof removed.classList !== "undefined") {
                         if(removed.classList.contains("interstitialblock")) {
                             // Action: Filtering events action (e.g. by date, events I'm attending, etc)
-                            //console.log("====================Filter Events Action====================");
+                            console.log(scriptName + ": Filter events action");
                             eventIndex = processEventListings(0);
                             return;
                         } else if(removed.classList.contains("simple-post-result-wrap")) {
                             let loadWheel = removed.getElementsByClassName("simple-infinite-pager")[0];
                             if((typeof loadWheel !== "undefined") && !loadWheel.classList.contains("off")) {
                                 // Action: Show more button clicked or scrolled down to more event
-                                //console.log("=====================Show More Action=====================");
+                                console.log(scriptName + ": Show more action");
                                 eventIndex = processEventListings(eventIndex);
                                 return;
                             }
@@ -119,7 +123,7 @@
 
     function requestEventInfo(eventListing, urlName, id) {
         if(typeof id === "undefined") {
-            console.log("Info request failed on event with urlName: " + urlName);
+            console.log(scriptName + ": Info request failed on event with urlName: " + urlName);
             return;
         }
         let xhr = new XMLHttpRequest(),
