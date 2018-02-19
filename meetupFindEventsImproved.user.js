@@ -11,10 +11,8 @@
 
 (function() {
     'use strict';
-    // TODO: Put inside closure?
-    var eventIndex = 0;  // Keep track of next event to display on.
 
-    var observer = new MutationObserver(eventListingsMutationCallback);
+    var observer = new MutationObserver(makeMutationCallback(processEventListings));
     var observerConfig = {
         childList: true,
         subtree: true,
@@ -25,46 +23,50 @@
     // Click show more
     //document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
 
-    // First page load
-    eventIndex = processNewEventListings(0);
+    function makeMutationCallback(processEventListings) {
+        // Keeps track of next event listings to process.
+        // Note, a call to processEventListings is necessary here in the definition
+        // because on first page load a mutation is assumed. 
+        var eventIndex = processEventListings(0);
 
-
-    function eventListingsMutationCallback(mutations) {
-        for(var m in mutations) {
-            var mutation = mutations[m];
-            var removedNodes = mutation.removedNodes;
-            for(var r in removedNodes) {
-                var removed = removedNodes[r];
-                if(removed.classList !== undefined) {
-                    if(removed.classList.contains("interstitialblock")) {
-                        // Action: Filtering events action (e.g. by date, events I'm attending, etc)
-                        //console.log("====================Filter Events Action====================");
-                        eventIndex = 0;
-                        eventIndex = processNewEventListings(0);
-                        return;
-                    } else if(removed.classList.contains("simple-post-result-wrap")) {
-                        var loadWheel = removed.getElementsByClassName("simple-infinite-pager")[0];
-                        if(loadWheel !== undefined && !loadWheel.classList.contains("off")) {
-                            // Action: Show more button clicked or scrolled down to more event
-                            //console.log("=====================Show More Action=====================");
-                            eventIndex = processNewEventListings(eventIndex);
+        function eventListingsMutationCallback(mutations) {
+            for(let m in mutations) {
+                let mutation = mutations[m];
+                let removedNodes = mutation.removedNodes;
+                for(let r in removedNodes) {
+                    let removed = removedNodes[r];
+                    if(typeof removed.classList !== "undefined") {
+                        if(removed.classList.contains("interstitialblock")) {
+                            // Action: Filtering events action (e.g. by date, events I'm attending, etc)
+                            //console.log("====================Filter Events Action====================");
+                            eventIndex = processEventListings(0);
                             return;
+                        } else if(removed.classList.contains("simple-post-result-wrap")) {
+                            let loadWheel = removed.getElementsByClassName("simple-infinite-pager")[0];
+                            if((typeof loadWheel !== "undefined") && !loadWheel.classList.contains("off")) {
+                                // Action: Show more button clicked or scrolled down to more event
+                                //console.log("=====================Show More Action=====================");
+                                eventIndex = processEventListings(eventIndex);
+                                return;
+                            }
                         }
                     }
                 }
             }
         }
+
+        return eventListingsMutationCallback;
     }
 
 
-    function processNewEventListings(startIndex) {
+    function processEventListings(startIndex) {
         // Go through event listings and perform API request for extra information
-        var eventListings = document.getElementsByClassName("event-listing");
-        var eventCount = eventListings.length;
+        let eventListings = document.getElementsByClassName("event-listing");
+        let eventCount = eventListings.length;
         for(var i = startIndex; i < eventCount; i++) {
-            var slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
-            var urlName = slashSplitURL[3];
-            var id = slashSplitURL[5];
+            let slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
+            let urlName = slashSplitURL[3];
+            let id = slashSplitURL[5];
             requestEventInfo(eventListings[i], urlName, id);
         }
         return i;
@@ -72,10 +74,10 @@
 
 
     function displayRSVPLimit(eventListing, rsvpLimit) {
-        if(rsvpLimit !== undefined) {
-            var attendeeCount = eventListing.getElementsByClassName("attendee-count")[0];
-            if(attendeeCount !== undefined) {
-                var span = document.createElement("span");
+        if(typeof rsvpLimit !== "undefined") {
+            let attendeeCount = eventListing.getElementsByClassName("attendee-count")[0];
+            if(typeof attendeeCount !== "undefined") {
+                let span = document.createElement("span");
                 span.setAttribute("class", "text--countdown text--middotLeft");
                 span.innerText += "/ " + rsvpLimit + " spaces available";
                 attendeeCount.append(span);
@@ -86,10 +88,10 @@
 
     // duration is in milliseconds.
     function displayDuration(eventListing, duration) {
-        if(duration !== undefined) {
-            var startTimeLink = eventListing.getElementsByClassName("resetLink chunk")[0];
+        if(typeof duration !== "undefined") {
+            let startTimeLink = eventListing.getElementsByClassName("resetLink chunk")[0];
             startTimeLink.append(document.createElement("br"));
-            var time = document.createElement("time");
+            let time = document.createElement("time");
             time.innerText = (duration/(1000*60*60)) + "HRS";
             startTimeLink.append(time);
         }
@@ -97,10 +99,10 @@
 
 
     function displayVenue(eventListing, venue) {
-        if(venue !== undefined) {
-            var locationDiv = eventListing.getElementsByClassName("chunk text--secondary")[0];
-            if(locationDiv !== undefined) {
-                var locationLink = locationDiv.children[0];
+        if(typeof venue !== "undefined") {
+            let locationDiv = eventListing.getElementsByClassName("chunk text--secondary")[0];
+            if(typeof locationDiv !== "undefined") {
+                let locationLink = locationDiv.children[0];
                 locationLink.href = "https://www.google.com/maps/?q=" + venue.lat + "," + venue.lon;
                 locationLink.setAttribute("target", "_blank");  // Open new tab when clicked
             }
@@ -116,10 +118,11 @@
 
 
     function requestEventInfo(eventListing, urlName, id) {
-        if(id === undefined) {
+        if(typeof id === "undefined") {
+            console.log("Info request failed on event with urlName: " + urlName);
             return;
         }
-        var xhr = new XMLHttpRequest(),
+        let xhr = new XMLHttpRequest(),
             method = "GET",
             url = "https://api.meetup.com/" + urlName + "/events/" + id;
         xhr.open(method, url, true);
