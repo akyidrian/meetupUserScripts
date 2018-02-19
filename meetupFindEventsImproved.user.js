@@ -9,7 +9,6 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
-// TODO: Odd bug - occational duplication of displayed items
 (function() {
     'use strict';
     // TODO: Put inside closure?
@@ -34,20 +33,22 @@
         for(var m in mutations) {
             var mutation = mutations[m];
             var removedNodes = mutation.removedNodes;
-            if(removedNodes.length != 0) {
-                for(var r in removedNodes) {
-                    var removed = removedNodes[r];
-                    if(removed.classList !== undefined) {
-                        if(removed.classList.contains("interstitialblock")) {  // Filtering events
-                            eventIndex = 0;
-                            eventIndex = processNewEventListings(0);
-                            return;
-                        }
-                        else if(removed.classList.contains("simple-post-result-wrap")) {  // Scrolling down through to more events
-                            // Note, this is called when a filtering action if performed too,
-                            // but since there is no new events presented, eventIndex
-                            // remains unchanged. In otherwords, no processing is done.
+            for(var r in removedNodes) {
+                var removed = removedNodes[r];
+                if(removed.classList !== undefined) {
+                    if(removed.classList.contains("interstitialblock")) {
+                        // Action: Filtering events action (e.g. by date, events I'm attending, etc)
+                        //console.log("====================Filter Events Action====================");
+                        eventIndex = 0;
+                        eventIndex = processNewEventListings(0);
+                        return;
+                    } else if(removed.classList.contains("simple-post-result-wrap")) {
+                        var loadWheel = removed.getElementsByClassName("simple-infinite-pager")[0];
+                        if(loadWheel !== undefined && !loadWheel.classList.contains("off")) {
+                            // Action: Show more button clicked or scrolled down to more event
+                            //console.log("=====================Show More Action=====================");
                             eventIndex = processNewEventListings(eventIndex);
+                            return;
                         }
                     }
                 }
