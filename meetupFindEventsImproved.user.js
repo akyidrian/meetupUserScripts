@@ -11,9 +11,18 @@
 
 (function() {
     'use strict';
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Constants
+    ////////////////////////////////////////////////////////////////////////////////////
     //const API_KEY = "api_key_here";  // FIXME: Required to work in Greasemonkey on Firefox
     const SCRIPT_NAME = "meetupFindEventsImproved";
-
+    const RATE_LIMIT_RESET = 10; // Time window in seconds
+    const RATE_LIMIT_LIMIT = 30; // Number of requests in time window possible
+    const REQUEST_RATE = ((RATE_LIMIT_RESET + 1) / RATE_LIMIT_LIMIT) * 1000;  // Request rate in milliseconds (with some leeway)
+    ////////////////////////////////////////////////////////////////////////////////////
+ 
+    var rl = rateLimiter();
     var observer = new MutationObserver(makeMutationCallback(processEventListings));
     var observerConfig = {
         childList: true,
@@ -28,6 +37,35 @@
 
     // Click show more
     //document.getElementsByClassName("simple-infinite-pager")[0].firstChild.click();
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Closures
+    ////////////////////////////////////////////////////////////////////////////////////
+    function rateLimiter() {
+        var queue = [];
+        var timer = null;
+
+        function process() {
+            let item = queue.shift();
+            item.process(item.reqObj);
+            if(queue.length === 0) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        function push(item) {
+            queue.push(item);
+            if(timer === null) {
+                timer = setInterval(process, REQUEST_RATE);
+            }
+        }
+
+        return {push: push};
+    }
+
 
     function makeMutationCallback(processEventListings) {
         // Keeps track of next event listings to process.
@@ -65,6 +103,10 @@
     }
 
 
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // Functions
+    ////////////////////////////////////////////////////////////////////////////////////
     function processEventListings(startIndex) {
         // Go through event listings and perform API request for extra information
         let eventListings = document.getElementsByClassName("event-listing");
@@ -73,7 +115,10 @@
             let slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
             let urlName = slashSplitURL[3];
             let id = slashSplitURL[5];
-            requestEventInfo(eventListings[i], urlName, id);
+            let reqObj = {"eventListing": eventListings[i], 
+                          "urlName": urlName,
+                          "id": id};
+            rl.push({"reqObj": reqObj, "process": requestEventInfo});
         }
         return i;
     }
@@ -123,7 +168,11 @@
     }
 
 
-    function requestEventInfo(eventListing, urlName, id) {
+    function requestEventInfo(reqObj) {
+        let eventListing = reqObj.eventListing;
+        let urlName = reqObj.urlName;
+        let id = reqObj.id;
+
         if(typeof id === "undefined") {
             console.log(SCRIPT_NAME + ": Info request failed on event with urlName: " + urlName);
             return;
@@ -140,7 +189,11 @@
         let method = "GET";
         xhr.open(method, url, true);
         xhr.onload = function () { // xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200)
+            console.log(xhr.getAllResponseHeaders());  // TODO: Clean up.
             updateEventListing(eventListing, JSON.parse(xhr.responseText));
+        };
+        xhr.onloadend = function() {  // TODO: Status checking.
+            console.log(xhr.status);
         };
         xhr.send();
     }
