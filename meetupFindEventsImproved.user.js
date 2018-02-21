@@ -11,7 +11,9 @@
 
 (function() {
     'use strict';
-    const scriptName = "meetupFindEventsImproved";
+    //const API_KEY = "api_key_here";  // FIXME: Required to work in Greasemonkey on Firefox
+    const SCRIPT_NAME = "meetupFindEventsImproved";
+
     var observer = new MutationObserver(makeMutationCallback(processEventListings));
     var observerConfig = {
         childList: true,
@@ -21,7 +23,7 @@
     if(targetNode !== null) {  // If logged in...
         observer.observe(targetNode, observerConfig);
     } else {
-        console.log(scriptName + ": Need to log in");
+        console.log(SCRIPT_NAME + ": Need to log in");
     }
 
     // Click show more
@@ -42,14 +44,14 @@
                     if(typeof removed.classList !== "undefined") {
                         if(removed.classList.contains("interstitialblock")) {
                             // Action: Filtering events action (e.g. by date, events I'm attending, etc)
-                            console.log(scriptName + ": Filter events action");
+                            console.log(SCRIPT_NAME + ": Filter events action");
                             eventIndex = processEventListings(0);
                             return;
                         } else if(removed.classList.contains("simple-post-result-wrap")) {
                             let loadWheel = removed.getElementsByClassName("simple-infinite-pager")[0];
                             if((typeof loadWheel !== "undefined") && !loadWheel.classList.contains("off")) {
                                 // Action: Show more button clicked or scrolled down to more event
-                                console.log(scriptName + ": Show more action");
+                                console.log(SCRIPT_NAME + ": Show more action");
                                 eventIndex = processEventListings(eventIndex);
                                 return;
                             }
@@ -123,12 +125,19 @@
 
     function requestEventInfo(eventListing, urlName, id) {
         if(typeof id === "undefined") {
-            console.log(scriptName + ": Info request failed on event with urlName: " + urlName);
+            console.log(SCRIPT_NAME + ": Info request failed on event with urlName: " + urlName);
             return;
         }
-        let xhr = new XMLHttpRequest(),
-            method = "GET",
-            url = "https://api.meetup.com/" + urlName + "/events/" + id;
+
+        let url = "https://api.meetup.com/" + urlName + "/events/" + id;
+        if(typeof API_KEY !== "undefined") {
+            url += "?key=" + API_KEY + "&sign=true";
+        } else {
+            console.log(SCRIPT_NAME + ": API_KEY undefined");
+        }
+
+        let xhr = new XMLHttpRequest();
+        let method = "GET";
         xhr.open(method, url, true);
         xhr.onload = function () { // xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200)
             updateEventListing(eventListing, JSON.parse(xhr.responseText));
