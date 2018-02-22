@@ -65,7 +65,13 @@
             }
         }
 
-        return {push: push};
+        function clear() {
+            queue = [];
+            clearInterval(timer);
+            timer = null;
+        }
+
+        return {push: push, clear: clear};
     }
 
 
@@ -84,7 +90,7 @@
                         if(removed.classList.contains("interstitialblock")) {
                             // Action: Filtering events action (e.g. by date, events I'm attending, etc)
                             console.log(SCRIPT_NAME + ": Filter events action");
-                            generateRequests(eventListings);
+                            generateRequests(eventListings, true);
                             eventIndex = eventListings.length;
                             return;
                         } else if(removed.classList.contains("simple-post-result-wrap")) {
@@ -92,7 +98,7 @@
                             if((typeof loadWheel !== "undefined") && !loadWheel.classList.contains("off")) {
                                 // Action: Show more button clicked or scrolled down to more event
                                 console.log(SCRIPT_NAME + ": Show more action");
-                                generateRequests(eventListings.slice(eventIndex));
+                                generateRequests(eventListings.slice(eventIndex), false);
                                 eventIndex = eventListings.length;
                                 return;
                             }
@@ -132,7 +138,8 @@
     ////////////////////////////////////////////////////////////////////////////////////
 
     // Go through provided event listings and process new event information
-    function generateRequests(eventListings) {
+    function generateRequests(eventListings, clearPast) {
+        if(clearPast) { rl.clear(); }
         for(let i in eventListings) {
             let slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
             let urlName = slashSplitURL[3];
