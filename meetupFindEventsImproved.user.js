@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         meetupFindEventsImproved
 // @namespace    https://akyidrian.github.io/
-// @version      0.1
-// @description  Shows event RSVP limits, durations and addresses on listings
+// @version      1.0
+// @description  Display event RSVP limits, durations and Google Map links on listings
 // @author       Aydin Arik
 // @match        https://www.meetup.com/
 // @match        https://www.meetup.com/find/events/*
@@ -22,8 +22,8 @@
     const REQUEST_RATE = ((RATE_LIMIT_RESET + 1) / RATE_LIMIT_LIMIT) * 1000;  // Request rate in milliseconds (with some leeway)
     ////////////////////////////////////////////////////////////////////////////////////
  
-    var rl = rateLimiter();
-    var observer = new MutationObserver(makeMutationCallback(processEventListings));
+    var rl = rateLimiter(REQUEST_RATE);
+    var observer = new MutationObserver(makeMutationCallback(generateRequests));
     var observerConfig = {
         childList: true,
         subtree: true,
@@ -43,13 +43,15 @@
     ////////////////////////////////////////////////////////////////////////////////////
     // Closures
     ////////////////////////////////////////////////////////////////////////////////////
-    function rateLimiter() {
+
+    // Push your request items so that requests are made at the right rate.
+    function rateLimiter(rate) {
         var queue = [];
         var timer = null;
 
         function process() {
             let item = queue.shift();
-            item.process(item.reqObj);
+            item.request(item.reqObj);
             if(queue.length === 0) {
                 clearInterval(timer);
                 timer = null;
@@ -59,7 +61,7 @@
         function push(item) {
             queue.push(item);
             if(timer === null) {
-                timer = setInterval(process, REQUEST_RATE);
+                timer = setInterval(process, rate);
             }
         }
 
@@ -67,13 +69,12 @@
     }
 
 
-    function makeMutationCallback(processEventListings) {
-        // Keeps track of next event listings to process.
-        // Note, a call to processEventListings is necessary here in the definition
-        // because on first page load a mutation is assumed. 
-        var eventIndex = processEventListings(0);
+    function makeMutationCallback(generateRequests) {
+        // Keeps track of next set of event listings to process.
+        var eventIndex = 0;
 
         function eventListingsMutationCallback(mutations) {
+            let eventListings = Array.from(document.getElementsByClassName("event-listing"));
             for(let m in mutations) {
                 let mutation = mutations[m];
                 let removedNodes = mutation.removedNodes;
@@ -83,14 +84,16 @@
                         if(removed.classList.contains("interstitialblock")) {
                             // Action: Filtering events action (e.g. by date, events I'm attending, etc)
                             console.log(SCRIPT_NAME + ": Filter events action");
-                            eventIndex = processEventListings(0);
+                            generateRequests(eventListings);
+                            eventIndex = eventListings.length;
                             return;
                         } else if(removed.classList.contains("simple-post-result-wrap")) {
                             let loadWheel = removed.getElementsByClassName("simple-infinite-pager")[0];
                             if((typeof loadWheel !== "undefined") && !loadWheel.classList.contains("off")) {
                                 // Action: Show more button clicked or scrolled down to more event
                                 console.log(SCRIPT_NAME + ": Show more action");
-                                eventIndex = processEventListings(eventIndex);
+                                generateRequests(eventListings.slice(eventIndex));
+                                eventIndex = eventListings.length;
                                 return;
                             }
                         }
@@ -99,7 +102,27 @@
             }
         }
 
+        // An initial call to generateRequests is necessary because there are essentially
+        // unrecorded mutations in the first page load. 
+        (function() {
+            let eventListings = Array.from(document.getElementsByClassName("event-listing"));
+            generateRequests(eventListings);
+            eventIndex = eventListings.length;
+        })();
+
         return eventListingsMutationCallback;
+    }
+
+
+    function makeDisplayCallback(xhr, eventListing) {
+        function displayExtraEventInfoCallback() {
+            if(xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                displayExtraEventInfo(eventListing, JSON.parse(xhr.responseText));
+            } else {
+                console.log(SCRIPT_NAME + ": Unusual status code (" + xhr.status + ") returned by " + xhr.responseURL);
+            }
+        }
+        return displayExtraEventInfoCallback;
     }
 
 
@@ -107,20 +130,19 @@
     ////////////////////////////////////////////////////////////////////////////////////
     // Functions
     ////////////////////////////////////////////////////////////////////////////////////
-    function processEventListings(startIndex) {
-        // Go through event listings and perform API request for extra information
-        let eventListings = document.getElementsByClassName("event-listing");
-        let eventCount = eventListings.length;
-        for(var i = startIndex; i < eventCount; i++) {
+
+    // Go through provided event listings and process new event information
+    function generateRequests(eventListings) {
+        for(let i in eventListings) {
             let slashSplitURL = eventListings[i].getElementsByTagName("a")[0].href.split("/");
             let urlName = slashSplitURL[3];
             let id = slashSplitURL[5];
             let reqObj = {"eventListing": eventListings[i], 
                           "urlName": urlName,
-                          "id": id};
-            rl.push({"reqObj": reqObj, "process": requestEventInfo});
+                          "id": id,
+                          "callback": makeDisplayCallback};
+            rl.push({"reqObj": reqObj, "request": requestEventInfo});
         }
-        return i;
     }
 
 
@@ -161,17 +183,17 @@
     }
 
 
-    function updateEventListing(eventListing, json) {
+    function displayExtraEventInfo(eventListing, json) {
         displayRSVPLimit(eventListing, json.rsvp_limit);
         displayVenue(eventListing, json.venue);
         displayDuration(eventListing, json.duration);
     }
 
-
     function requestEventInfo(reqObj) {
         let eventListing = reqObj.eventListing;
         let urlName = reqObj.urlName;
         let id = reqObj.id;
+        let callback = reqObj.callback;
 
         if(typeof id === "undefined") {
             console.log(SCRIPT_NAME + ": Info request failed on event with urlName: " + urlName);
@@ -182,19 +204,13 @@
         if(typeof API_KEY !== "undefined") {
             url += "?key=" + API_KEY + "&sign=true";
         } else {
-            console.log(SCRIPT_NAME + ": API_KEY undefined");
+            console.log(SCRIPT_NAME + ": API_KEY is undefined");
         }
 
         let xhr = new XMLHttpRequest();
         let method = "GET";
         xhr.open(method, url, true);
-        xhr.onload = function () { // xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200)
-            console.log(xhr.getAllResponseHeaders());  // TODO: Clean up.
-            updateEventListing(eventListing, JSON.parse(xhr.responseText));
-        };
-        xhr.onloadend = function() {  // TODO: Status checking.
-            console.log(xhr.status);
-        };
+        xhr.onload = callback(xhr, eventListing);
         xhr.send();
     }
 })();
