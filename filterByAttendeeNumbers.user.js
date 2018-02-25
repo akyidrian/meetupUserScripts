@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         meetupFindEventsFilter
+// @name         filterByAttendeeNumbers
 // @namespace    https://akyidrian.github.io/
 // @version      1.0
 // @description  Show/hide event listings based on numbers attending
@@ -14,7 +14,7 @@
     ////////////////////////////////////////////////////////////////////////////////////
     // Constants
     ////////////////////////////////////////////////////////////////////////////////////
-    const SCRIPT_NAME = "meetupFindEventsFilter";
+    const SCRIPT_NAME = "filterByAttendeeNumbers";
     ////////////////////////////////////////////////////////////////////////////////////
  
     createFilterByAttendeeNumbersForm(filterByAttendeeNumbersFormSubmitCallback);

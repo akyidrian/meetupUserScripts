@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         meetupFindEventsImproved
+// @name         displayExtraEventInfo
 // @namespace    https://akyidrian.github.io/
 // @version      1.0
 // @description  Display event RSVP limits, durations and Google Map links on listings
@@ -16,7 +16,7 @@
     // Constants
     ////////////////////////////////////////////////////////////////////////////////////
     //const API_KEY = "api_key_here";  // FIXME: Required to work in Greasemonkey on Firefox
-    const SCRIPT_NAME = "meetupFindEventsImproved";
+    const SCRIPT_NAME = "displayExtraEventInfo";
     const RATE_LIMIT_RESET = 10; // Time window in seconds
     const RATE_LIMIT_LIMIT = 30; // Number of requests in time window possible
     const REQUEST_RATE = ((RATE_LIMIT_RESET + 1) / RATE_LIMIT_LIMIT) * 1000;  // Request rate in milliseconds (with some leeway)
