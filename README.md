@@ -12,4 +12,4 @@ Shows RSVP limits, durations and Google Maps links on the listed events for conv
 filterByAttendeeNumbers.user.js
 -------------------------------
 
-Shows/hides events based on number of attendees. Script helps hides listed events that have attendees < min or attendees > max. By default it will show all events.
+Shows/hides listed events based on number of attendees. Specifically, userscript helps hides listed events that have attendees < min or attendees > max. By default it will hide no listed events.
